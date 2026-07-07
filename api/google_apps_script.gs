@@ -26,23 +26,19 @@ function doPost(e) {
       return json({ ok: false, error: 'Select at least one group' })
     }
 
-    const sheet = getSheet()
-    sheet.appendRow([
-      new Date().toISOString(),
-      name,
-      email,
-      ip,
-      fdm,
-      fmaq,
-    ])
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME)
+    if (!sheet) {
+      return json({ ok: false, error: 'Sheet not configured. Run setup in Apps Script.' })
+    }
 
+    sheet.appendRow([new Date().toISOString(), name, email, ip, fdm, fmaq])
     return json({ ok: true })
   } catch (err) {
     return json({ ok: false, error: String(err) })
   }
 }
 
-function getSheet() {
+function setup() {
   const ss = SpreadsheetApp.getActiveSpreadsheet()
   let sheet = ss.getSheetByName(SHEET_NAME)
   if (!sheet) {
@@ -51,11 +47,6 @@ function getSheet() {
     sheet.getRange(1, 1, 1, 6).setFontWeight('bold')
     sheet.setFrozenRows(1)
   }
-  return sheet
-}
-
-function setup() {
-  getSheet()
   Logger.log('Sheet ready. Set SIGNUP_SECRET in Script properties, then deploy as web app.')
 }
 

@@ -97,6 +97,42 @@ const serveStatic = (req, res) => {
   }
 }
 
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
+const APPS_SCRIPT_TIMEOUT_MS = 30000
+
+const fetchTimeout = (url, options, ms = APPS_SCRIPT_TIMEOUT_MS) =>
+  fetch(url, { ...options, signal: AbortSignal.timeout(ms) })
+
+const parseJsonBody = (text) => {
+  const trimmed = text.trim()
+  if (trimmed.startsWith('{')) return JSON.parse(trimmed)
+  const start = trimmed.indexOf('{')
+  const end = trimmed.lastIndexOf('}')
+  if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1))
+  throw new Error(`Apps Script returned non-JSON (${trimmed.slice(0, 80)})`)
+}
+
+// Apps Script runs doPost on the first POST and writes the row before returning 302.
+// The redirect GET only fetches the JSON echo — skip it and respond as soon as POST finishes.
+const callAppsScript = async (payload) => {
+  const postRes = await fetchTimeout(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'manual',
+  })
+
+  if (REDIRECT_STATUSES.has(postRes.status)) {
+    await postRes.arrayBuffer()
+    return { ok: true }
+  }
+
+  const postText = await postRes.text()
+  if (postRes.status === 200) return parseJsonBody(postText)
+
+  throw new Error(`Apps Script POST status ${postRes.status}`)
+}
+
 createServer(async (req, res) => {
   if (req.url === '/api/signup' && req.method === 'POST') {
     if (req.headers['content-type'] !== 'application/json') {
@@ -124,24 +160,20 @@ createServer(async (req, res) => {
         return
       }
 
-      const upstream = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret: SIGNUP_SECRET,
-          name,
-          email,
-          groups,
-          ip: clientIp(req),
-        }),
+      const result = await callAppsScript({
+        secret: SIGNUP_SECRET,
+        name,
+        email,
+        groups,
+        ip: clientIp(req),
       })
-      const result = await upstream.json()
       if (!result.ok) {
-        json(res, upstream.status === 200 ? 502 : upstream.status, result)
+        json(res, 502, { ok: false, error: result.error || 'Signup rejected' })
         return
       }
       json(res, 200, { ok: true })
-    } catch {
+    } catch (err) {
+      console.error('Signup error:', err.message)
       json(res, 500, { ok: false, error: 'Signup failed' })
     }
     return

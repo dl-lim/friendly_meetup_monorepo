@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import HeroSection from './components/HeroSection.vue'
 import config from './config.json'
 
@@ -20,27 +20,109 @@ const name = ref('')
 const email = ref('')
 const signupGroups = ref([...initialGroups])
 const submitting = ref(false)
+const success = ref(false)
 const status = ref('')
+const invalidFields = ref({ name: false, email: false })
+
+const submittingQuotes = [
+  'Rolling out the welcome mat…',
+  'Saving your spot at the table…',
+  'Adding you to the friends list…',
+  'Polishing your invite…',
+  'Warming up a seat for you…',
+]
+const submittingQuoteIndex = ref(0)
+let submittingQuoteTimer
+
+watch(submitting, (active) => {
+  clearInterval(submittingQuoteTimer)
+  if (!active) {
+    submittingQuoteIndex.value = 0
+    return
+  }
+  submittingQuoteIndex.value = 0
+  submittingQuoteTimer = setInterval(() => {
+    submittingQuoteIndex.value = (submittingQuoteIndex.value + 1) % submittingQuotes.length
+  }, 2000)
+})
+
+onUnmounted(() => clearInterval(submittingQuoteTimer))
+
+const buttonLabel = computed(() => {
+  if (submitting.value) return 'Joining…'
+  if (success.value) return 'Joined'
+  return 'Join us'
+})
+
+const footnote = computed(() => {
+  if (status.value) return { class: 'signup-status', text: status.value }
+  if (submitting.value) {
+    return { class: 'signup-note', text: submittingQuotes[submittingQuoteIndex.value] }
+  }
+  return { class: 'signup-note', text: 'Become one of our friends today' }
+})
+
+const flashInvalid = async (nameEmpty, emailEmpty) => {
+  invalidFields.value = { name: false, email: false }
+  await nextTick()
+  invalidFields.value = { name: nameEmpty, email: emailEmpty }
+}
+
+const onInvalidEnd = (field, e) => {
+  if (e.animationName !== 'field-invalid-fade') return
+  invalidFields.value = { ...invalidFields.value, [field]: false }
+}
 
 const onSubmit = async () => {
   status.value = ''
+  success.value = false
+
+  const trimmedName = name.value.trim()
+  const trimmedEmail = email.value.trim()
+  const nameEmpty = !trimmedName
+  const emailEmpty = !trimmedEmail
+
+  if (nameEmpty || emailEmpty) {
+    await flashInvalid(nameEmpty, emailEmpty)
+    if (nameEmpty && emailEmpty) status.value = 'Name and email are required'
+    else if (nameEmpty) status.value = 'Please enter your name'
+    else status.value = 'Please enter your email'
+    return
+  }
+
+  if (!signupGroups.value.length) {
+    status.value = 'Select at least one group'
+    return
+  }
+
   submitting.value = true
   try {
     const res = await fetch('/api/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: name.value,
-        email: email.value,
+        name: trimmedName,
+        email: trimmedEmail,
         groups: signupGroups.value,
       }),
     })
-    const data = await res.json()
+    const text = await res.text()
+    let data = {}
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      status.value = 'Something went wrong. Please try again.'
+      return
+    }
     if (!res.ok || !data.ok) {
       status.value = data.error || 'Something went wrong. Please try again.'
       return
     }
-    status.value = 'Thanks — you\'re on the list.'
+    const firstName = trimmedName.split(/\s+/)[0]
+    status.value = firstName
+      ? `Thanks, ${firstName}. You're on the list. See you at the next one!`
+      : `Thanks. You're on the list. See you at the next one!`
+    success.value = true
     name.value = ''
     email.value = ''
   } catch {
@@ -58,23 +140,44 @@ const onSubmit = async () => {
     <section class="signup">
       <div class="inner">
         <h2>Don't miss the next meetup</h2>
-        <form @submit.prevent="onSubmit">
+        <form novalidate @submit.prevent="onSubmit">
           <label class="sr-only" for="name">Your name</label>
-          <input id="name" v-model="name" type="text" placeholder="Your name" autocomplete="name" />
+          <input
+            id="name"
+            v-model="name"
+            type="text"
+            placeholder="Your name"
+            autocomplete="name"
+            :class="{ 'field-invalid': invalidFields.name }"
+            @animationend="onInvalidEnd('name', $event)"
+          />
           <label class="sr-only" for="email">Your email</label>
-          <input id="email" v-model="email" type="email" placeholder="Your email" autocomplete="email" />
+          <input
+            id="email"
+            v-model="email"
+            type="email"
+            placeholder="Your email"
+            autocomplete="email"
+            :class="{ 'field-invalid': invalidFields.email }"
+            @animationend="onInvalidEnd('email', $event)"
+          />
           <div class="checks">
             <label v-for="group in groups" :key="group.id">
               <input v-model="signupGroups" type="checkbox" :value="group.id" />
               <span>{{ group.label }}</span>
             </label>
           </div>
-          <button type="submit" :disabled="submitting">{{ submitting ? 'Joining…' : 'Join us' }}</button>
-          <p v-if="status" class="signup-status">{{ status }}</p>
-          <p class="signup-note">Become one of our friends today</p>
+          <button
+            type="submit"
+            :disabled="submitting"
+            :class="{ 'is-success': success }"
+          >
+            {{ buttonLabel }}
+          </button>
+          <p :class="footnote.class">{{ footnote.text }}</p>
           <p class="signup-privacy">
             You'll only hear from us about the group(s) you select, with meetup invites and the occasional reminder when something is coming up.
-            Your details stays private with us. We never spam, share, or sell it.
+            Your details stay private with us. We never spam, share, or sell it.
           </p>
         </form>
       </div>
@@ -132,6 +235,22 @@ h2 {
 .signup form input[type='text']::placeholder,
 .signup form input[type='email']::placeholder {
   color: #8a8a8a;
+}
+
+.signup form input.field-invalid {
+  animation: field-invalid-fade 5s ease-out;
+}
+
+@keyframes field-invalid-fade {
+  0% {
+    border-color: #e03131;
+    background: #fff5f5;
+  }
+
+  100% {
+    border-color: #d9d9d9;
+    background: #ffffff;
+  }
 }
 
 .checks {
@@ -199,6 +318,12 @@ button[type='submit'] {
 button[type='submit']:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+button[type='submit'].is-success:disabled {
+  opacity: 1;
+  background: #9ca3af;
+  cursor: default;
 }
 
 .signup-status {
