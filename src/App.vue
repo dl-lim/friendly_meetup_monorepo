@@ -19,6 +19,36 @@ const initialGroups = queryGroups.length ? queryGroups : groupIds
 const name = ref('')
 const email = ref('')
 const signupGroups = ref([...initialGroups])
+const submitting = ref(false)
+const status = ref('')
+
+const onSubmit = async () => {
+  status.value = ''
+  submitting.value = true
+  try {
+    const res = await fetch('/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name.value,
+        email: email.value,
+        groups: signupGroups.value,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok || !data.ok) {
+      status.value = data.error || 'Something went wrong. Please try again.'
+      return
+    }
+    status.value = 'Thanks — you\'re on the list.'
+    name.value = ''
+    email.value = ''
+  } catch {
+    status.value = 'Something went wrong. Please try again.'
+  } finally {
+    submitting.value = false
+  }
+}
 </script>
 
 <template>
@@ -28,7 +58,7 @@ const signupGroups = ref([...initialGroups])
     <section class="signup">
       <div class="inner">
         <h2>Don't miss the next meetup</h2>
-        <form @submit.prevent>
+        <form @submit.prevent="onSubmit">
           <label class="sr-only" for="name">Your name</label>
           <input id="name" v-model="name" type="text" placeholder="Your name" autocomplete="name" />
           <label class="sr-only" for="email">Your email</label>
@@ -39,7 +69,8 @@ const signupGroups = ref([...initialGroups])
               <span>{{ group.label }}</span>
             </label>
           </div>
-          <button type="submit">Join us</button>
+          <button type="submit" :disabled="submitting">{{ submitting ? 'Joining…' : 'Join us' }}</button>
+          <p v-if="status" class="signup-status">{{ status }}</p>
           <p class="signup-note">Become one of our friends today</p>
           <p class="signup-privacy">
             You'll only hear from us about the group(s) you select, with meetup invites and the occasional reminder when something is coming up.
@@ -163,6 +194,18 @@ button[type='submit'] {
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
+}
+
+button[type='submit']:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.signup-status {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6b6b6b;
+  text-align: center;
 }
 
 .signup-note {

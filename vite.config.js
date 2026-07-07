@@ -39,4 +39,7 @@ function heroImagesPlugin() {
 
 export default defineConfig({
   plugins: [vue(), heroImagesPlugin()],
+  server: {
+    proxy: { '/api': 'http://localhost:8080' },
+  },
 })

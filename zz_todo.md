@@ -1,2 +1,0 @@
-- [ ] queryparam for checkboxes
-- [x] collage delays
