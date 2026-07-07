@@ -1,0 +1,14 @@
+{
+  "hero": {
+    "collage": {
+      "enabled": true,
+      "initialImages": 8,
+      "intervalMs": 4800,
+      "maxImages": null,
+      "zIndex": 0
+    },
+    "logo": {
+      "zIndex": 8
+    }
+  }
+}

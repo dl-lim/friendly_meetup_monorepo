@@ -1,0 +1,217 @@
+<script setup>
+import { ref } from 'vue'
+import HeroSection from './components/HeroSection.vue'
+import config from './config.json'
+
+const groups = [
+  { id: 'fdm', label: 'Friendly Data Meetup' },
+  { id: 'fmaq', label: 'Friendly Meetup for Actuaries and Quants' },
+]
+
+const groupIds = groups.map((group) => group.id)
+const queryGroups = [
+  ...new URLSearchParams(window.location.search).getAll('groups').flatMap((value) => value.split(',')),
+]
+  .map((value) => value.trim())
+  .filter((id) => groupIds.includes(id))
+const initialGroups = queryGroups.length ? queryGroups : groupIds
+
+const name = ref('')
+const email = ref('')
+const signupGroups = ref([...initialGroups])
+</script>
+
+<template>
+  <main class="page">
+    <HeroSection :hero="config.hero" />
+
+    <section class="signup">
+      <div class="inner">
+        <h2>Don't miss the next meetup</h2>
+        <form @submit.prevent>
+          <label class="sr-only" for="name">Your name</label>
+          <input id="name" v-model="name" type="text" placeholder="Your name" autocomplete="name" />
+          <label class="sr-only" for="email">Your email</label>
+          <input id="email" v-model="email" type="email" placeholder="Your email" autocomplete="email" />
+          <div class="checks">
+            <label v-for="group in groups" :key="group.id">
+              <input v-model="signupGroups" type="checkbox" :value="group.id" />
+              <span>{{ group.label }}</span>
+            </label>
+          </div>
+          <button type="submit">Join us</button>
+          <p class="signup-note">Become one of our friends today</p>
+          <p class="signup-privacy">
+            You'll only hear from us about the group(s) you select, with meetup invites and the occasional reminder when something is coming up.
+            Your details stays private with us. We never spam, share, or sell it.
+          </p>
+        </form>
+      </div>
+    </section>
+  </main>
+</template>
+
+<style scoped>
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 8rem;
+  padding-bottom: 5rem;
+}
+
+.page > section {
+  width: 100%;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+h2 {
+  margin: 0;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.signup form {
+  display: grid;
+  gap: 1.25rem;
+  justify-items: center;
+  width: 100%;
+}
+
+.signup form input[type='text'],
+.signup form input[type='email'] {
+  width: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  color: #111111;
+  background: #ffffff;
+}
+
+.signup form input[type='text']::placeholder,
+.signup form input[type='email']::placeholder {
+  color: #8a8a8a;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .checks {
+    gap: 1.5rem 3rem;
+  }
+}
+
+.checks label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.25rem;
+  flex: 0 0 calc(1rem + 0.75rem + 21ch);
+  width: calc(1rem + 0.75rem + 21ch);
+}
+
+.checks label span {
+  flex: 1;
+  min-width: 0;
+  max-width: 21ch;
+}
+
+.checks input[type='checkbox'] {
+  margin-top: 0;
+}
+
+label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+  accent-color: #e03131;
+  flex-shrink: 0;
+}
+
+button[type='submit'] {
+  justify-self: center;
+  min-width: 10rem;
+  margin-top: 1.2rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.85rem 2rem;
+  background: #e03131;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signup-note {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6b6b6b;
+  text-align: center;
+}
+
+.signup-privacy {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #8a8a8a;
+  text-align: center;
+}
+
+@media (max-width: 639px) {
+  .signup {
+    padding-bottom: 2.5rem;
+  }
+
+  .signup .inner {
+    gap: 2.25rem;
+  }
+
+  .signup form {
+    gap: 1.75rem;
+  }
+
+  .signup-note {
+    padding-bottom: 0;
+  }
+
+  .signup-privacy {
+    padding-bottom: 2rem;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
