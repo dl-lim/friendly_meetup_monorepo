@@ -62,3 +62,5 @@ scripts/google-signup.gs  # paste into Google Apps Script
 src/                    # Vue app
 docs/SETUP.md           # deployment guide
 ```
+
+Google Apps Script and Sheet are in dl@doublewoodc.com Google account
