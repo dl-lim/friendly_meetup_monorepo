@@ -141,6 +141,10 @@ createServer(async (req, res) => {
     }
     try {
       const body = JSON.parse(await readBody(req))
+      if (String(body.colleagues_invited || '').trim()) {
+        json(res, 200, { ok: true })
+        return
+      }
       const name = String(body.name || '').trim()
       const email = String(body.email || '').trim()
       const groups = Array.isArray(body.groups)

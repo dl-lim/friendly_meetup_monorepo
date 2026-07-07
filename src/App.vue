@@ -18,6 +18,7 @@ const initialGroups = queryGroups.length ? queryGroups : groupIds
 
 const name = ref('')
 const email = ref('')
+const colleaguesInvited = ref('')
 const signupGroups = ref([...initialGroups])
 const submitting = ref(false)
 const success = ref(false)
@@ -104,6 +105,7 @@ const onSubmit = async () => {
         name: trimmedName,
         email: trimmedEmail,
         groups: signupGroups.value,
+        colleagues_invited: colleaguesInvited.value,
       }),
     })
     const text = await res.text()
@@ -125,6 +127,7 @@ const onSubmit = async () => {
     success.value = true
     name.value = ''
     email.value = ''
+    colleaguesInvited.value = ''
   } catch {
     status.value = 'Something went wrong. Please try again.'
   } finally {
@@ -161,6 +164,17 @@ const onSubmit = async () => {
             :class="{ 'field-invalid': invalidFields.email }"
             @animationend="onInvalidEnd('email', $event)"
           />
+          <p class="signup-extra">
+            <label for="colleagues-invited">Colleagues you've invited</label>
+            <input
+              id="colleagues-invited"
+              v-model="colleaguesInvited"
+              type="text"
+              name="colleagues_invited"
+              tabindex="-1"
+              autocomplete="off"
+            />
+          </p>
           <div class="checks">
             <label v-for="group in groups" :key="group.id">
               <input v-model="signupGroups" type="checkbox" :value="group.id" />
@@ -216,6 +230,7 @@ h2 {
 }
 
 .signup form {
+  position: relative;
   display: grid;
   gap: 1.25rem;
   justify-items: center;
@@ -369,6 +384,19 @@ button[type='submit'].is-success:disabled {
   .signup-privacy {
     padding-bottom: 2rem;
   }
+}
+
+.signup-extra {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .sr-only {
