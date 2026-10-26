@@ -57,10 +57,11 @@ docker compose up -d --build
 Smoke test:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/
+scripts/smoke-test.sh                        # defaults to http://localhost:8080
+scripts/smoke-test.sh http://localhost:8081  # or pass another base URL
 ```
 
-You should get `200`.
+It checks that the page, its JS/CSS bundles and the SPA fallback return `200`, that the bundles don't contain the Apps Script URL, and that `/api/signup` validates input. It never writes to the sheet, so it's safe to run with placeholder `.env` values.
 
 Test signup (replace values):
 
