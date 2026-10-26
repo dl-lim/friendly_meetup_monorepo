@@ -1,0 +1,1 @@
+This repository houses all event copies for Friendly Data Meetup
