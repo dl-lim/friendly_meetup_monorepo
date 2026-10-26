@@ -10,7 +10,7 @@ Follow these steps in order. The app will not accept signups until Google Apps S
 4. Save the project.
 5. In the toolbar, select **`setup`** from the function dropdown and click **Run**.
    - Authorize the script when prompted (Review permissions → your account → Allow).
-   - This creates a **Signups** tab with headers: `timestamp`, `name`, `email`, `ip`, `fdm`, `fmaq`.
+   - This creates a **website_entries** tab with headers: `timestamp`, `name`, `email`, `ip`, `fdm`, `fmaq`.
 6. Generate a secret:
    ```bash
    openssl rand -hex 32
@@ -70,7 +70,7 @@ curl -s -X POST http://localhost:8080/api/signup \
   -d '{"name":"Test","email":"test@example.com","groups":["fdm"]}'
 ```
 
-Expected: `{"ok":true}` and a new row in the **Signups** sheet.
+Expected: `{"ok":true}` and a new row in the **website_entries** sheet.
 
 ## 4. Firewall and HTTPS
 

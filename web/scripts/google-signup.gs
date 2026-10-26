@@ -1,5 +1,5 @@
-const SHEET_NAME = 'Signups'
-const SECRET_KEY = 'SIGNUP_SECRET'
+const SHEET_NAME = 'website_entries'
+const SECRET_KEY = 'SIGNUP_SECRET' // stored in Script properties
 
 function doPost(e) {
   try {
